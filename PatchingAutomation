@@ -1,0 +1,42 @@
+#!/bin/bash
+
+# Ensure the script is run as root
+if [[ $EUID -ne 0 ]]; then
+  echo "This script must be run as root. Use sudo!"
+  exit 1
+fi
+
+# Update and upgrade the system
+echo "Updating the system..."
+yum update -y
+
+# Install essential packages
+echo "Installing essential packages..."
+yum install -y curl wget git vim firewalld epel-release
+
+# Start and enable Firewalld
+echo "Setting up the firewall..."
+systemctl start firewalld
+systemctl enable firewalld
+
+# Open SSH port in the firewall
+echo "Configuring the firewall..."
+firewall-cmd --permanent --add-service=ssh
+firewall-cmd --reload
+firewall-cmd --list-all
+
+# Create a new user with sudo privileges
+read -p "Enter a username for the new user: " username
+adduser $username
+passwd $username
+usermod -aG wheel $username
+echo "User $username has been created and added to the sudo group."
+
+# Enable automatic updates
+echo "Setting up automatic updates..."
+yum install -y dnf-automatic
+systemctl enable --now dnf-automatic.timer
+echo "Automatic updates have been enabled."
+
+# Print completion message
+echo "Setup complete! Please reboot the system to apply all changes."
